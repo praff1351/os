@@ -1,0 +1,82 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+// Function to perform sorting (bubble sort in this case)
+void bubbleSort(int arr[], int size) {
+    for (int i = 0; i < size - 1; i++) {
+        for (int j = 0; j < size - i - 1; j++) {
+            if (arr[j] > arr[j + 1]) {
+                // Swap arr[j] and arr[j+1]
+                int temp = arr[j];
+                arr[j] = arr[j + 1];
+                arr[j + 1] = temp;
+            }
+        }
+    }
+}
+
+int main() {
+    int size;
+    printf("Enter the number of integers: ");
+    scanf("%d", &size);
+
+    int arr[size];
+    printf("Enter %d integers: ", size);
+    for (int i = 0; i < size; i++) {
+        scanf("%d", &arr[i]);
+    }
+
+    int pipe_fd[2];
+    if (pipe(pipe_fd) == -1) {
+        perror("Pipe creation failed");
+        return 1;
+    }
+
+    pid_t pid = fork(); // Create a child process using the fork system call
+
+    if (pid < 0) {
+        // Forking failed
+        fprintf(stderr, "Fork failed.\n");
+        return 1;
+    } else if (pid == 0) {
+        // Child process
+        close(pipe_fd[0]); // Close the read end of the pipe in the child process
+        bubbleSort(arr, size); // Sort the integers in the child process
+        write(pipe_fd[1], arr, sizeof(arr)); // Write the sorted array to the pipe
+        close(pipe_fd[1]);
+        exit(0);
+    } else {
+        // Parent process
+        close(pipe_fd[1]); // Close the write end of the pipe in the parent process
+
+        int status;
+        pid_t child_pid = wait(&status); // Wait for the child process to finish
+
+        int sorted_arr[size];
+        read(pipe_fd[0], sorted_arr, sizeof(sorted_arr)); // Read the sorted array from the pipe
+
+        close(pipe_fd[0]);
+        
+        printf("Parent process waited for child process with PID %d.\n", child_pid);
+
+        if (WIFEXITED(status)) {
+            printf("Child process exited normally with status %d.\n", WEXITSTATUS(status));
+        }
+
+        // Print the sorted integers
+        printf("Sorted integers: ");
+        for (int i = 0; i < size; i++) {
+            printf("%d ", sorted_arr[i]);
+        }
+        printf("\n");
+
+        // Demonstrate the zombie state by introducing a delay
+        sleep(3);
+        printf("Parent process finished.\n");
+    }
+
+    return 0;
+}
