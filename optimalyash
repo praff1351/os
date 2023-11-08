@@ -1,0 +1,64 @@
+#include <stdio.h>
+#include <stdbool.h>
+#include <limits.h>
+
+int main() {
+    int n, m, pageFaults = 0; // n is the number of pages, m is the number of frames, pageFaults counts the page faults
+    printf("Enter the number of pages: ");
+    scanf("%d", &n); // Read the number of pages from the user
+
+    int pages[n]; // Array to store page references
+    printf("Enter the page reference sequence: ");
+    for (int i = 0; i < n; i++) {
+        scanf("%d", &pages[i]); // Read the page reference sequence from the user
+    }
+
+    printf("Enter the number of frames (minimum 3): ");
+    scanf("%d", &m); // Read the number of frames from the user
+
+    int frames[m]; // Array to represent frames
+    bool isInFrame[m]; // Array to indicate whether a page is in a frame
+    for (int i = 0; i < m; i++) {
+        frames[i] = -1; // Initialize frames as -1 (indicating empty frame)
+        isInFrame[i] = false; // Initialize isInFrame as false
+    }
+
+    // Optimal page replacement algorithm
+    for (int i = 0; i < n; i++) {
+        int pageFound = 0; // Flag to check if the page is already in a frame
+        // Check if the page is already in a frame
+        for (int j = 0; j < m; j++) {
+            if (frames[j] == pages[i]) {
+                pageFound = 1;
+                break;
+            }
+        }
+        // If the page is not in any frame, find the optimal page to replace
+        if (!pageFound) {
+            int farthest = -1, index = -1;
+            for (int j = 0; j < m; j++) {
+                int k;
+                for (k = i + 1; k < n; k++) {
+                    if (frames[j] == pages[k]) {
+                        if (k > farthest) {
+                            farthest = k;
+                            index = j;
+                        }
+                        break;
+                    }
+                }
+                if (k == n) {
+                    index = j;
+                    break;
+                }
+            }
+            frames[index] = pages[i]; // Replace the optimal page in the frame
+            pageFaults++;
+        }
+    }
+
+    // Output the page fault count
+    printf("Number of page faults using Optimal: %d\n", pageFaults);
+
+    return 0;
+}
